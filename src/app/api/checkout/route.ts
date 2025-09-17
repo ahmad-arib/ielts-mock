@@ -2,8 +2,16 @@ import { NextResponse } from 'next/server';
 import { tripayBase } from '@/lib/tripay';
 import crypto from 'crypto';
 
+type TripayOrderItem = {
+  sku: string;
+  name: string;
+  price: number;
+  quantity: number;
+  product_url: string;
+};
+
 export async function POST(req: Request) {
-  const { name, email } = await req.json();
+  const { name, email } = (await req.json()) as { name: string; email: string };
 
   const amount = 50000;
   const method = process.env.TRIPAY_METHOD || 'QRIS';
@@ -19,30 +27,34 @@ export async function POST(req: Request) {
     .createHmac('sha256', privateKey)
     .update(merchantCode + merchantRef + amount)
     .digest('hex');
-
-  const payload: Record<string, any> = {
-    method,
-    merchant_ref: merchantRef,
-    amount,
-    customer_name: name,
-    customer_email: email,
-    order_items: [
-      { sku: 'IELTS-MOCK-ONE', name: 'IELTS Mock Test Token (14 days)', price: amount, quantity: 1, product_url: `${process.env.APP_BASE_URL}/` },
-    ],
-    callback_url: `${process.env.APP_BASE_URL}/api/webhook/tripay`,
-    return_url: `${process.env.APP_BASE_URL}/login?paid=1`,
-    expired_time: expiredUnix,
-    signature,
-  };
+  const orderItems: TripayOrderItem[] = [
+    {
+      sku: 'IELTS-MOCK-ONE',
+      name: 'IELTS Mock Test Token (14 days)',
+      price: amount,
+      quantity: 1,
+      product_url: `${process.env.APP_BASE_URL}/`,
+    },
+  ];
 
   const body = new URLSearchParams();
-  for (const [k, v] of Object.entries(payload)) {
-    if (Array.isArray(v)) {
-      v.forEach((item, i) => Object.entries(item).forEach(([kk, vv]) => body.append(`order_items[${i}][${kk}]`, String(vv))));
-    } else {
-      body.append(k, String(v));
-    }
-  }
+  body.set('method', method);
+  body.set('merchant_ref', merchantRef);
+  body.set('amount', String(amount));
+  body.set('customer_name', name);
+  body.set('customer_email', email);
+  body.set('callback_url', `${process.env.APP_BASE_URL}/api/webhook/tripay`);
+  body.set('return_url', `${process.env.APP_BASE_URL}/login?paid=1`);
+  body.set('expired_time', String(expiredUnix));
+  body.set('signature', signature);
+
+  orderItems.forEach((item, index) => {
+    body.set(`order_items[${index}][sku]`, item.sku);
+    body.set(`order_items[${index}][name]`, item.name);
+    body.set(`order_items[${index}][price]`, String(item.price));
+    body.set(`order_items[${index}][quantity]`, String(item.quantity));
+    body.set(`order_items[${index}][product_url]`, item.product_url);
+  });
 
   const resp = await fetch(`${base}/transaction/create`, {
     method: 'POST',

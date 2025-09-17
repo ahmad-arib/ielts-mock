@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
   if (status !== 'PAID') return NextResponse.json({ ok: true });
 
-  let email = customer_email || null;
+  const email = customer_email || null;
   let userId: string | null = null;
 
   if (email) {
