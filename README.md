@@ -34,3 +34,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Development helpers
+
+### Seed a successful purchase
+
+To quickly work on the post-payment experience you can create a fake successful purchase in Supabase by calling the local API route `POST /api/dev/seed-success`. The route is disabled in production and uses your `SUPABASE_SERVICE_ROLE_KEY`, so ensure the environment variables from `.env.local` are available when running the development server.
+
+The endpoint accepts optional overrides for `email`, `user`, `amount`, and `token`. When no payload is provided it will create a paid record for `mail@ahmadarib.com` and issue a fresh token.
+
+```bash
+curl -X POST http://localhost:3000/api/dev/seed-success \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"mail@ahmadarib.com","user":"ahmadarib"}'
+```
+
+The JSON response includes the generated token so you can log in immediately via `/login` and continue building the test pages.
