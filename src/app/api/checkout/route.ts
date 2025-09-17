@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
-import { tripayBase } from '@/lib/tripay';
 import crypto from 'crypto';
+import { tripayBase } from '@/lib/tripay';
+import { resolveTripayCallbackUrl, resolveTripayProductUrl, resolveTripayReturnUrl } from '@/lib/appConfig';
+
+export const runtime = 'nodejs';
 
 type TripayOrderItem = {
   sku: string;
@@ -10,68 +13,164 @@ type TripayOrderItem = {
   product_url: string;
 };
 
+type TripayCreateResponse = {
+  success: boolean;
+  message?: string;
+  data?: {
+    reference?: string;
+    merchant_ref?: string;
+    checkout_url?: string;
+    pay_code?: string;
+    payment_code?: string;
+    pay_url?: string;
+    payment_name?: string;
+    amount?: number;
+    total_amount?: number;
+    instructions?: unknown;
+  };
+};
+
+function sanitizePhoneNumber(phone: string) {
+  return phone.replace(/[^0-9]/g, '');
+}
+
 export async function POST(req: Request) {
-  const { name, email } = (await req.json()) as { name: string; email: string };
+  let payload: { name?: string; email?: string; phone?: string };
 
-  const amount = 50000;
-  const method = process.env.TRIPAY_METHOD || 'QRIS';
-  const merchantCode = process.env.TRIPAY_MERCHANT_CODE!;
-  const privateKey = process.env.TRIPAY_PRIVATE_KEY!;
-  const apiKey = process.env.TRIPAY_API_KEY!;
+  try {
+    payload = await req.json();
+  } catch (error) {
+    console.error('Invalid checkout payload', error);
+    return NextResponse.json({ error: 'Invalid checkout request' }, { status: 400 });
+  }
+
+  const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+  const email = typeof payload.email === 'string' ? payload.email.trim() : '';
+  const phone = typeof payload.phone === 'string' ? payload.phone.trim() : '';
+
+  if (!name || !email) {
+    return NextResponse.json({ error: 'Name and email are required.' }, { status: 400 });
+  }
+
+  const sanitizedPhone = sanitizePhoneNumber(phone);
+  if (!sanitizedPhone || sanitizedPhone.length < 8) {
+    return NextResponse.json({ error: 'Please provide a valid phone number.' }, { status: 400 });
+  }
+
+  const configuredAmount = Number(process.env.TRIPAY_AMOUNT);
+  const amount = Number.isFinite(configuredAmount) && configuredAmount > 0 ? Math.round(configuredAmount) : 50000;
+  const method = process.env.TRIPAY_METHOD?.trim() || '';
+  const merchantCode = process.env.TRIPAY_MERCHANT_CODE;
+  const privateKey = process.env.TRIPAY_PRIVATE_KEY;
+  const apiKey = process.env.TRIPAY_API_KEY;
+
+  const missing: string[] = [];
+  if (!method) missing.push('TRIPAY_METHOD');
+  if (!merchantCode) missing.push('TRIPAY_MERCHANT_CODE');
+  if (!privateKey) missing.push('TRIPAY_PRIVATE_KEY');
+  if (!apiKey) missing.push('TRIPAY_API_KEY');
+
+  if (missing.length > 0) {
+    console.error('Tripay configuration missing:', missing.join(', '));
+    return NextResponse.json(
+      { error: 'Payment gateway is not configured. Please contact support.' },
+      { status: 500 }
+    );
+  }
+
   const base = tripayBase();
-
   const merchantRef = `INV_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
   const expiredUnix = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
 
   const signature = crypto
-    .createHmac('sha256', privateKey)
-    .update(merchantCode + merchantRef + amount)
+    .createHmac('sha256', privateKey!)
+    .update(merchantCode! + merchantRef + amount)
     .digest('hex');
+
   const orderItems: TripayOrderItem[] = [
     {
       sku: 'IELTS-MOCK-ONE',
       name: 'IELTS Mock Test Token (14 days)',
       price: amount,
       quantity: 1,
-      product_url: `${process.env.APP_BASE_URL}/`,
+      product_url: resolveTripayProductUrl(),
     },
   ];
 
-  const body = new URLSearchParams();
-  body.set('method', method);
-  body.set('merchant_ref', merchantRef);
-  body.set('amount', String(amount));
-  body.set('customer_name', name);
-  body.set('customer_email', email);
-  body.set('callback_url', `${process.env.APP_BASE_URL}/api/webhook/tripay`);
-  body.set('return_url', `${process.env.APP_BASE_URL}/login?paid=1`);
-  body.set('expired_time', String(expiredUnix));
-  body.set('signature', signature);
-
-  orderItems.forEach((item, index) => {
-    body.set(`order_items[${index}][sku]`, item.sku);
-    body.set(`order_items[${index}][name]`, item.name);
-    body.set(`order_items[${index}][price]`, String(item.price));
-    body.set(`order_items[${index}][quantity]`, String(item.quantity));
-    body.set(`order_items[${index}][product_url]`, item.product_url);
-  });
+  const requestBody = {
+    method,
+    merchant_ref: merchantRef,
+    amount,
+    customer_name: name,
+    customer_email: email,
+    customer_phone: sanitizedPhone,
+    order_items: orderItems,
+    callback_url: resolveTripayCallbackUrl(),
+    return_url: resolveTripayReturnUrl(),
+    expired_time: expiredUnix,
+    signature,
+  };
 
   const resp = await fetch(`${base}/transaction/create`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: 'Bearer ' + apiKey },
-    body,
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    cache: 'no-store',
+    body: JSON.stringify(requestBody),
   });
 
+  const rawResponse = await resp.text();
+
   if (!resp.ok) {
-    console.error('Tripay create error:', await resp.text());
-    return NextResponse.json({ error: 'Failed to create transaction' }, { status: 500 });
+    console.error('Tripay create error:', rawResponse);
+    let message = 'Failed to create transaction';
+    try {
+      const parsed = JSON.parse(rawResponse);
+      if (typeof parsed?.message === 'string') message = parsed.message;
+    } catch {
+      // ignore json parse error
+    }
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 
-  const data = await resp.json();
+  let parsed: TripayCreateResponse;
+  try {
+    parsed = JSON.parse(rawResponse) as TripayCreateResponse;
+  } catch (error) {
+    console.error('Tripay response parse error', error, rawResponse);
+    return NextResponse.json(
+      { error: 'Unexpected response from payment gateway.' },
+      { status: 502 }
+    );
+  }
+
+  if (!parsed.success) {
+    console.error('Tripay rejected transaction:', parsed);
+    return NextResponse.json(
+      { error: parsed.message || 'Tripay could not create the transaction.' },
+      { status: 400 }
+    );
+  }
+
+  const data = parsed.data || {};
+  const checkoutUrl = (data.checkout_url || data.pay_url || null) as string | null;
+  const payCode = (data.pay_code || data.payment_code || null) as string | null;
+
+  if (!checkoutUrl && !payCode) {
+    console.warn('Tripay response missing checkout_url and pay_code', parsed);
+  }
+
   return NextResponse.json({
-    reference: data?.data?.reference,
-    checkout_url: data?.data?.checkout_url,
-    pay_code: data?.data?.pay_code,
-    instructions: data?.data?.instructions,
+    reference: data.reference,
+    merchant_ref: data.merchant_ref,
+    checkout_url: checkoutUrl,
+    pay_code: payCode,
+    payment_name: data.payment_name,
+    amount: data.amount ?? amount,
+    total_amount: data.total_amount,
+    instructions: data.instructions,
   });
 }

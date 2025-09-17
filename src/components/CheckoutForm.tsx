@@ -25,8 +25,24 @@ export default function CheckoutForm({
     const formData = new FormData(form);
     const name = formData.get('name');
     const email = formData.get('email');
+    const phone = formData.get('phone');
 
     if (typeof name !== 'string' || typeof email !== 'string') {
+      return;
+    }
+
+    const sanitizedPhone =
+      typeof phone === 'string'
+        ? phone
+            .replace(/[^0-9+]/g, '')
+            .replace(/(?!^)[+]/g, '')
+            .trim()
+        : '';
+
+    const digitsOnly = sanitizedPhone.replace(/[^0-9]/g, '');
+
+    if (!digitsOnly || digitsOnly.length < 8) {
+      alert('Please enter a valid phone number so we can share the payment status.');
       return;
     }
 
@@ -34,18 +50,28 @@ export default function CheckoutForm({
       setLoading(true);
       const response = await fetch('/api/checkout', {
         method: 'POST',
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name, email, phone: sanitizedPhone }),
         headers: { 'Content-Type': 'application/json' },
       });
 
       const data = await response.json();
 
+      if (!response.ok) {
+        const message = typeof data?.error === 'string' ? data.error : 'Failed to start payment.';
+        alert(message);
+        return;
+      }
+
       if (data.checkout_url) {
         window.location.href = data.checkout_url as string;
       } else if (data.pay_code) {
+        if (Array.isArray(data.instructions) && data.instructions.length > 0) {
+          console.table(data.instructions);
+        }
         alert(`Use this pay code: ${data.pay_code}. After paying, go to Login.`);
         window.location.href = '/login?paid=1';
       } else {
+        console.warn('Tripay response missing payment link', data);
         alert('Failed to start payment');
       }
     } catch (error) {
@@ -86,6 +112,15 @@ export default function CheckoutForm({
         type="email"
         placeholder="Email for token delivery"
         autoComplete="email"
+        className={nameInputClasses}
+        required
+      />
+      <input
+        name="phone"
+        type="tel"
+        placeholder="WhatsApp number for payment updates"
+        autoComplete="tel"
+        inputMode="tel"
         className={nameInputClasses}
         required
       />
