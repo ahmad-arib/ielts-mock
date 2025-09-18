@@ -35,9 +35,9 @@ function getMimeType(ext: string): string {
 
 export async function GET(
   _request: Request,
-  { params }: { params: { testId: string; assetPath: string[] } }
+  context: { params: Promise<{ testId: string; assetPath: string[] }> }
 ): Promise<Response> {
-  const { testId, assetPath } = params;
+  const { testId, assetPath } = await context.params;
   if (!isSafeTestId(testId) || !Array.isArray(assetPath) || assetPath.length === 0) {
     return new Response('Not found', { status: 404 });
   }

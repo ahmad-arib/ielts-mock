@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { scoreQuestion } from '@/lib/scoring';
 import { loadLocalScoringRecords, type ScoringRecord } from '@/lib/tests';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getSupabaseAdmin, hasSupabaseCredentials } from '@/lib/supabaseAdmin';
 
 function isSafeTestId(testId: string): boolean {
   return /^[A-Za-z0-9_-]+$/.test(testId);
@@ -12,8 +12,11 @@ interface SubmissionPayload {
   answers?: Record<string, unknown>;
 }
 
-export async function POST(request: Request, { params }: { params: { testId: string } }) {
-  const { testId } = params;
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ testId: string }> }
+) {
+  const { testId } = await context.params;
   if (!isSafeTestId(testId)) {
     return NextResponse.json({ error: 'Invalid test id' }, { status: 400 });
   }
@@ -30,13 +33,14 @@ export async function POST(request: Request, { params }: { params: { testId: str
     return NextResponse.json({ error: 'Answers must be an object keyed by q_id' }, { status: 400 });
   }
 
-  const supabaseConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const supabaseConfigured = hasSupabaseCredentials();
+  const supabase = getSupabaseAdmin();
   let scoringRecords: ScoringRecord[] | null = null;
   let supabaseOperational = false;
 
-  if (supabaseConfigured) {
+  if (supabaseConfigured && supabase) {
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('questions')
         .select('q_id, q_type, correct_json')
         .eq('test_id', testId);
@@ -65,9 +69,9 @@ export async function POST(request: Request, { params }: { params: { testId: str
   let submissionId: string | null = null;
   const warnings: string[] = [];
 
-  if (supabaseOperational) {
+  if (supabaseOperational && supabase) {
     try {
-      const { data: submissionData, error: submissionError } = await supabaseAdmin
+      const { data: submissionData, error: submissionError } = await supabase
         .from('submissions')
         .insert({ test_id: testId })
         .select('submission_id')
@@ -87,7 +91,7 @@ export async function POST(request: Request, { params }: { params: { testId: str
           }));
 
           if (payloadRows.length > 0) {
-            const { error: answersError } = await supabaseAdmin.from('submission_answers').insert(payloadRows);
+            const { error: answersError } = await supabase.from('submission_answers').insert(payloadRows);
             if (answersError) {
               warnings.push('Unable to persist question-level scoring to Supabase.');
             }
