@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // scripts/seed_testpack.ts
 import * as fs from "fs";
 import * as path from "path";

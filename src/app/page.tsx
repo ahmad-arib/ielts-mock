@@ -1,4 +1,5 @@
 import CheckoutForm from '@/components/CheckoutForm';
+import { DEFAULT_TEST_PATH } from '@/config/tests';
 import Link from 'next/link';
 
 const features = [
@@ -280,7 +281,7 @@ export default function Home() {
             <Link href="/login" className="text-slate-100 transition hover:text-white">
               Login with token
             </Link>
-            <Link href="/test" className="text-slate-100 transition hover:text-white">
+            <Link href={DEFAULT_TEST_PATH} className="text-slate-100 transition hover:text-white">
               Test overview
             </Link>
           </div>
