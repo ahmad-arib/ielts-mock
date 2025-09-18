@@ -81,6 +81,7 @@ function createSupabaseAdmin(): SupabaseClient | null {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
       headers: {
+        apikey: serviceRoleKey,
         Authorization: `Bearer ${serviceRoleKey}`,
       },
     },
