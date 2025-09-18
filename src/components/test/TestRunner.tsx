@@ -112,8 +112,21 @@ function AudioPlayer({ src, allowSeek = true, showRemaining }: AudioPlayerProps)
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [hasEnded, setHasEnded] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
   const lastAllowedTimeRef = useRef(0);
   const seekingLocked = allowSeek === false;
+  const hideNativeControls = seekingLocked;
+
+  useEffect(() => {
+    setDuration(0);
+    setCurrentTime(0);
+    lastAllowedTimeRef.current = 0;
+    setHasStarted(false);
+    setHasEnded(false);
+    setPlaybackError(null);
+  }, [src]);
 
   const formatTime = useCallback((time: number) => {
     if (!Number.isFinite(time) || time < 0) return '00:00';
@@ -149,26 +162,81 @@ function AudioPlayer({ src, allowSeek = true, showRemaining }: AudioPlayerProps)
     }
   }, [seekingLocked]);
 
+  const requestPlayback = useCallback(() => {
+    const element = audioRef.current;
+    if (!element) return;
+    setPlaybackError(null);
+    void element.play().catch(() => {
+      setPlaybackError('Unable to start playback. Please check your audio output settings.');
+    });
+  }, []);
+
+  const handlePlay = useCallback(() => {
+    setHasStarted(true);
+    setHasEnded(false);
+  }, []);
+
+  const handlePause = useCallback(() => {
+    const element = audioRef.current;
+    if (!element) return;
+    if (seekingLocked && hasStarted && !hasEnded) {
+      void element.play().catch(() => {
+        setPlaybackError('Playback was interrupted. Please keep the tab focused to continue listening.');
+      });
+    }
+  }, [hasEnded, hasStarted, seekingLocked]);
+
+  const handleEnded = useCallback(() => {
+    setHasEnded(true);
+  }, []);
+
   if (!src) return null;
+
+  const remainingLabel = showRemaining ? (
+    <p className={hideNativeControls ? 'text-sm font-medium text-slate-700' : 'mt-2 text-sm font-medium text-slate-600'}>
+      Remaining: {formatTime(Math.max(duration - currentTime, 0))}
+    </p>
+  ) : null;
+
+  const controlButtonLabel = !hasStarted ? 'Play recording' : hasEnded ? 'Playback finished' : 'Playing…';
 
   return (
     <div className="rounded-xl border bg-slate-50 p-4 shadow-sm">
       <audio
         ref={audioRef}
-        controls
+        controls={!hideNativeControls}
         preload="metadata"
         src={src}
-        className="w-full"
+        className={hideNativeControls ? 'hidden' : 'w-full'}
         onLoadedMetadata={handleLoadedMetadata}
         onTimeUpdate={handleTimeUpdate}
         onSeeking={handleSeeking}
-        controlsList="nodownload"
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onEnded={handleEnded}
+        controlsList="nodownload noplaybackrate"
       />
-      {showRemaining && (
-        <p className="mt-2 text-sm font-medium text-slate-600">
-          Remaining: {formatTime(Math.max(duration - currentTime, 0))}
+      {hideNativeControls ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            onClick={requestPlayback}
+            disabled={hasStarted}
+            className="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {controlButtonLabel}
+          </button>
+          {remainingLabel}
+        </div>
+      ) : (
+        remainingLabel
+      )}
+      {seekingLocked && (
+        <p className="mt-3 text-xs text-slate-500">
+          The recording can be played only once and cannot be paused or rewound.
         </p>
       )}
+      {playbackError ? <p className="mt-2 text-xs font-semibold text-amber-600">{playbackError}</p> : null}
     </div>
   );
 }
@@ -542,7 +610,13 @@ export function TestRunner({ test }: { test: TestDefinition }) {
             >
               <p className="text-xs uppercase tracking-wide">Listening</p>
               <p className="mt-2 text-2xl font-semibold">{formatDuration(listeningTimeLeft)}</p>
-              <p className="mt-1 text-sm text-sky-200/80">Time remaining</p>
+              <p
+                className={`mt-1 text-sm ${
+                  !showThankYou && phase === 'listening' ? 'text-slate-600' : 'text-sky-200/80'
+                }`}
+              >
+                Time remaining
+              </p>
               {listeningDurationLabel && (
                 <p className="mt-3 text-xs text-sky-200/70">Planned duration: {listeningDurationLabel}</p>
               )}
@@ -559,7 +633,13 @@ export function TestRunner({ test }: { test: TestDefinition }) {
             >
               <p className="text-xs uppercase tracking-wide">Reading</p>
               <p className="mt-2 text-2xl font-semibold">{formatDuration(readingTimeLeft)}</p>
-              <p className="mt-1 text-sm text-sky-200/80">Time remaining</p>
+              <p
+                className={`mt-1 text-sm ${
+                  !showThankYou && phase === 'reading' ? 'text-slate-600' : 'text-sky-200/80'
+                }`}
+              >
+                Time remaining
+              </p>
               {readingDurationLabel && (
                 <p className="mt-3 text-xs text-sky-200/70">Planned duration: {readingDurationLabel}</p>
               )}
