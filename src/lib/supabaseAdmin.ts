@@ -61,28 +61,45 @@ function hydrateEnvFromLocalFile(): void {
   }
 }
 
+function sanitizeEnvValue(value: string | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function createSupabaseAdmin(): SupabaseClient | null {
   hydrateEnvFromLocalFile();
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = sanitizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const serviceRoleKey = sanitizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (!url || !serviceRoleKey) {
     return null;
   }
 
-  return createClient(url, serviceRoleKey, { auth: { persistSession: false } });
+  return createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    },
+  });
 }
 
 export function getSupabaseAdmin(): SupabaseClient | null {
   if (!isServerRuntime()) return null;
 
-  if (typeof cachedClient !== 'undefined') {
-    return cachedClient;
+  if (typeof cachedClient === 'undefined' || cachedClient === null) {
+    const client = createSupabaseAdmin();
+    if (client) {
+      cachedClient = client;
+    } else if (typeof cachedClient === 'undefined') {
+      cachedClient = null;
+    }
   }
 
-  cachedClient = createSupabaseAdmin();
-  return cachedClient;
+  return cachedClient ?? null;
 }
 
 export function hasSupabaseCredentials(): boolean {

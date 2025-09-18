@@ -9,8 +9,9 @@ export async function generateStaticParams() {
   return ids.map((testId) => ({ testId }));
 }
 
-export async function generateMetadata({ params }: { params: { testId: string } }): Promise<Metadata> {
-  const test = await getTestDefinition(params.testId);
+export async function generateMetadata({ params }: { params: Promise<{ testId: string }> }): Promise<Metadata> {
+  const { testId } = await params;
+  const test = await getTestDefinition(testId);
   if (!test) {
     return { title: 'IELTS Mock Test' };
   }
@@ -19,8 +20,9 @@ export async function generateMetadata({ params }: { params: { testId: string } 
   };
 }
 
-export default async function TestPage({ params }: { params: { testId: string } }) {
-  const test = await getTestDefinition(params.testId);
+export default async function TestPage({ params }: { params: Promise<{ testId: string }> }) {
+  const { testId } = await params;
+  const test = await getTestDefinition(testId);
   if (!test) {
     notFound();
   }
