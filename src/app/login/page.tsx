@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
 
+import { DEFAULT_TEST_PATH } from '@/config/tests';
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -10,7 +12,7 @@ export default function LoginPage() {
     setLoading(true); setError('');
     const token = (e.currentTarget.elements.namedItem('token') as HTMLInputElement).value;
     const res = await fetch('/api/session', { method: 'POST', body: JSON.stringify({ token }), headers: { 'Content-Type': 'application/json' } });
-    if (res.ok) window.location.href = '/test';
+    if (res.ok) window.location.href = DEFAULT_TEST_PATH;
     else { const data = await res.json(); setError(data.error || 'Login failed'); }
     setLoading(false);
   }
