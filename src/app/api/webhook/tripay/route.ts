@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { addDays, generateToken } from '@/lib/token';
 import { sendTokenEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    console.error('Supabase admin client unavailable for Tripay webhook.');
+    return NextResponse.json({ error: 'Supabase integration unavailable' }, { status: 500 });
+  }
+
   const raw = await req.text();
   const sentSig = req.headers.get('x-callback-signature') || '';
   const event = req.headers.get('x-callback-event') || '';
@@ -21,7 +27,7 @@ export async function POST(req: Request) {
   const payload = JSON.parse(raw);
   const { reference, status, customer_email, total_amount, amount_received } = payload;
 
-  await supabaseAdmin.from('payments').insert({
+  await supabase.from('payments').insert({
     provider: 'tripay',
     external_id: reference,
     email: customer_email || null,
@@ -36,10 +42,10 @@ export async function POST(req: Request) {
   let userId: string | null = null;
 
   if (email) {
-    const { data: existing } = await supabaseAdmin.from('users').select('id').eq('email', email).maybeSingle();
+    const { data: existing } = await supabase.from('users').select('id').eq('email', email).maybeSingle();
     if (existing?.id) userId = existing.id;
     else {
-      const { data: inserted } = await supabaseAdmin.from('users').insert({ email }).select('id').single();
+      const { data: inserted } = await supabase.from('users').insert({ email }).select('id').single();
       userId = inserted?.id ?? null;
     }
   }
@@ -47,7 +53,7 @@ export async function POST(req: Request) {
   const token = generateToken(18);
   const expiresAt = addDays(14);
 
-  await supabaseAdmin.from('tokens').insert({
+  await supabase.from('tokens').insert({
     user_id: userId,
     token,
     expires_at: expiresAt.toISOString(),

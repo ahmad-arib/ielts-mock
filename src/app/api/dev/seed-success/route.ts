@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { addDays, generateToken } from '@/lib/token';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
+  }
+
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
   }
@@ -31,7 +36,7 @@ export async function POST(req: Request) {
     createdAt: new Date().toISOString(),
   };
 
-  const { error: paymentError } = await supabaseAdmin.from('payments').insert({
+  const { error: paymentError } = await supabase.from('payments').insert({
     provider: 'manual_dev',
     external_id: externalId,
     email,
@@ -50,7 +55,7 @@ export async function POST(req: Request) {
 
   let userId: string | null = null;
 
-  const { data: existingUser, error: existingError } = await supabaseAdmin
+  const { data: existingUser, error: existingError } = await supabase
     .from('users')
     .select('id')
     .eq('email', email)
@@ -67,7 +72,7 @@ export async function POST(req: Request) {
   if (existingUser?.id) {
     userId = existingUser.id;
   } else {
-    const { data: insertedUser, error: insertUserError } = await supabaseAdmin
+    const { data: insertedUser, error: insertUserError } = await supabase
       .from('users')
       .insert({ email })
       .select('id')
@@ -84,7 +89,7 @@ export async function POST(req: Request) {
     userId = insertedUser?.id ?? null;
   }
 
-  const { error: tokenError } = await supabaseAdmin.from('tokens').insert({
+  const { error: tokenError } = await supabase.from('tokens').insert({
     user_id: userId,
     token,
     expires_at: expiresAt,
