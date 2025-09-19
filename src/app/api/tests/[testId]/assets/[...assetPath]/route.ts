@@ -55,8 +55,12 @@ export async function GET(
   try {
     const file = await fs.readFile(resolvedPath);
     const contentType = getMimeType(path.extname(resolvedPath).toLowerCase());
+    const arrayBuffer = file.buffer.slice(
+      file.byteOffset,
+      file.byteOffset + file.byteLength
+    );
 
-    return new Response(file, {
+    return new Response(arrayBuffer, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000, immutable',
