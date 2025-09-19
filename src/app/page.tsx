@@ -1,6 +1,7 @@
+import Link from 'next/link';
+
 import CheckoutForm from '@/components/CheckoutForm';
 import InterestForm from '@/components/InterestForm';
-import Link from 'next/link';
 
 const features = [
   {
@@ -15,8 +16,7 @@ const features = [
   },
   {
     title: 'Scoring will be delivered by email',
-    description:
-      'Submit your answers and receive structured feedback via email—no WhatsApp number or extra apps required.',
+    description: 'Submit your answers and receive structured feedback via email—no WhatsApp number or extra apps required.',
   },
 ];
 
@@ -75,7 +75,7 @@ export default function Home() {
             <ul className="mt-8 grid gap-4 sm:grid-cols-2">
               <li className="flex items-start gap-3">
                 <span className="mt-1 flex h-7 w-7 items-center justify-center rounded-full bg-sky-500/20 text-sky-300">✓</span>
-                <span className="text-sm text-slate-200">Listening & Reading try out available now; Writing & Speaking launch coming soon.</span>
+                <span className="text-sm text-slate-200">Listening &amp; Reading try out available now; Writing &amp; Speaking launch coming soon.</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-1 flex h-7 w-7 items-center justify-center rounded-full bg-sky-500/20 text-sky-300">✓</span>
@@ -134,7 +134,7 @@ export default function Home() {
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <p className="text-xs uppercase tracking-[0.3em] text-slate-300">Included</p>
                     <ul className="mt-3 space-y-2 text-sm text-slate-100">
-                      <li>• IELTS-style Listening & Reading modules with timers</li>
+                      <li>• IELTS-style Listening &amp; Reading modules with timers</li>
                       <li>• Scoring will be delivered by email</li>
                       <li>• Token login valid for 14 days</li>
                     </ul>
@@ -144,7 +144,7 @@ export default function Home() {
                     <ul className="mt-3 space-y-2 text-sm text-slate-100">
                       <li>• Real-time pacing that mirrors the official exam</li>
                       <li>• Email support throughout your preparation</li>
-                      <li>• Early invite for the Writing & Speaking try out launch</li>
+                      <li>• Early invite for the Writing &amp; Speaking try out launch</li>
                     </ul>
                   </div>
                 </div>
@@ -212,12 +212,6 @@ export default function Home() {
                 <li>• 14 days of access to complete the IELTS try out</li>
                 <li>• Scoring will be delivered by email</li>
               </ul>
-              <div className="mt-8 rounded-2xl bg-slate-900 px-6 py-5 text-sm text-slate-200">
-                <p className="font-semibold text-white">Pro tip</p>
-                <p className="mt-2">
-                  Start the try out as soon as you receive the token and repeat challenging Listening or Reading sections within the 14-day window to build unstoppable momentum.
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -270,7 +264,7 @@ export default function Home() {
             <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-sky-200 ring-1 ring-white/20">
               Coming soon
             </span>
-            <h2 className="mt-6 text-3xl font-semibold text-white sm:text-4xl">Writing & Speaking Try Out is in development</h2>
+            <h2 className="mt-6 text-3xl font-semibold text-white sm:text-4xl">Writing &amp; Speaking Try Out is in development</h2>
             <p className="mt-4 text-base text-slate-200">
               We are preparing interactive Writing and Speaking tasks so you can complete the full IELTS experience. Join the early interest list and we will contact you as soon as the new try out launches.
             </p>
@@ -280,7 +274,7 @@ export default function Home() {
             <div className="rounded-3xl bg-white p-8 text-slate-900 shadow-2xl shadow-slate-950/40 ring-1 ring-slate-200">
               <h3 className="text-xl font-semibold">Want to be first in line?</h3>
               <p className="mt-2 text-sm text-slate-600">
-                Leave your name and email so our team can contact you once the Writing & Speaking try out is live.
+                Leave your name and email so our team can contact you once the Writing &amp; Speaking try out is live.
               </p>
               <InterestForm
                 className="mt-6"
@@ -288,7 +282,7 @@ export default function Home() {
                 buttonClassName="bg-emerald-500 hover:bg-emerald-400 focus:ring-emerald-300"
               />
               <p className="mt-4 text-xs text-slate-500">
-                We will only use your email to share launch updates for the Writing & Speaking try out.
+                We will only use your email to share launch updates for the Writing &amp; Speaking try out.
               </p>
             </div>
             <div className="mt-6 rounded-3xl border border-white/15 bg-white/5 p-6 text-sm text-white shadow-xl shadow-slate-950/30">

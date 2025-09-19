@@ -3,10 +3,21 @@ import { NextResponse } from 'next/server';
 import { sendInterestNotification } from '@/lib/email';
 import { getSupabaseAdmin, hasSupabaseCredentials } from '@/lib/supabaseAdmin';
 
+type InterestPayload = {
+  name?: unknown;
+  email?: unknown;
+};
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function sanitiseField(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
-  let payload: { name?: string; email?: string };
+  let payload: InterestPayload;
 
   try {
     payload = await req.json();
@@ -15,26 +26,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
   }
 
-  const name = typeof payload.name === 'string' ? payload.name.trim() : '';
-  const email = typeof payload.email === 'string' ? payload.email.trim() : '';
+  const name = sanitiseField(payload.name);
+  const email = sanitiseField(payload.email);
 
   if (!name || !email) {
     return NextResponse.json({ error: 'Name and email are required.' }, { status: 400 });
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (!EMAIL_REGEX.test(email)) {
     return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
   }
 
-  const supabaseConfigured = hasSupabaseCredentials();
-  const supabase = getSupabaseAdmin();
+  if (hasSupabaseCredentials()) {
+    const supabase = getSupabaseAdmin();
 
-  if (supabaseConfigured && !supabase) {
-    return NextResponse.json({ error: 'Supabase is configured but unavailable.' }, { status: 503 });
-  }
+    if (!supabase) {
+      return NextResponse.json({ error: 'Supabase is configured but unavailable.' }, { status: 503 });
+    }
 
-  if (supabaseConfigured && supabase) {
     try {
       const { error } = await supabase
         .from('writing_speaking_interest')
@@ -43,17 +52,15 @@ export async function POST(req: Request) {
       if (error) {
         console.error('Supabase interest upsert failed', error.code, error.message, error.details);
         return NextResponse.json(
-          {
-            error: 'We could not record your interest right now. Please try again later.',
-          },
-          { status: 500 }
+          { error: 'We could not record your interest right now. Please try again later.' },
+          { status: 500 },
         );
       }
     } catch (error) {
       console.error('Supabase interest upsert threw', error);
       return NextResponse.json(
         { error: 'We could not record your interest right now. Please try again later.' },
-        { status: 500 }
+        { status: 500 },
       );
     }
   }
@@ -64,7 +71,7 @@ export async function POST(req: Request) {
     console.error('Failed to send interest notification', error);
     return NextResponse.json(
       { error: 'We could not record your interest right now. Please try again later.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
