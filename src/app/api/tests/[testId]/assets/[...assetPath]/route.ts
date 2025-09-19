@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 
+export const runtime = 'nodejs';
+
 const TESTS_ROOT = path.join(process.cwd(), 'tests');
 
 function isSafeTestId(testId: string): boolean {
@@ -35,9 +37,9 @@ function getMimeType(ext: string): string {
 
 export async function GET(
   _request: Request,
-  context: { params: Promise<{ testId: string; assetPath: string[] }> }
+  { params }: { params: { testId: string; assetPath: string[] } }
 ): Promise<Response> {
-  const { testId, assetPath } = await context.params;
+  const { testId, assetPath } = params;
   if (!isSafeTestId(testId) || !Array.isArray(assetPath) || assetPath.length === 0) {
     return new Response('Not found', { status: 404 });
   }
@@ -52,7 +54,12 @@ export async function GET(
   try {
     const file = await fs.readFile(resolvedPath);
     const contentType = getMimeType(path.extname(resolvedPath).toLowerCase());
-    return new Response(file, {
+    const arrayBuffer = file.buffer.slice(
+      file.byteOffset,
+      file.byteOffset + file.byteLength
+    );
+
+    return new Response(arrayBuffer, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000, immutable',
