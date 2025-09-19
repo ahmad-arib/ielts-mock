@@ -11,6 +11,7 @@ import type {
   TestDefinition,
 } from '@/lib/tests';
 
+import InterestForm from '@/components/InterestForm';
 import { MarkdownText } from './MarkdownText';
 
 type AnswerValue = string | number | null;
@@ -665,27 +666,59 @@ export function TestRunner({ test }: { test: TestDefinition }) {
         </header>
 
         {showThankYou ? (
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-lg">
-            <h2 className="text-2xl font-semibold text-slate-900">Thank you for your submission!</h2>
-            <p className="mt-3 text-sm text-slate-600">
-              Your answers have been recorded. Our team will review them and share the result via email.
-            </p>
-            {submissionInfo?.submissionId && (
-              <p className="mt-4 text-sm text-slate-600">
-                Confirmation ID: <span className="font-mono text-slate-900">{submissionInfo.submissionId}</span>
+          <>
+            <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-lg">
+              <h2 className="text-2xl font-semibold text-slate-900">Thank you for your submission!</h2>
+              <p className="mt-3 text-sm text-slate-600">
+                Your answers have been recorded. Our team will review them and share the result via email.
               </p>
-            )}
-            {submissionInfo?.warnings?.length ? (
-              <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-700 shadow-sm">
-                <h3 className="text-base font-semibold">Submission notes</h3>
-                <ul className="mt-3 space-y-2 list-disc pl-5">
-                  {submissionInfo.warnings.map((warning) => (
-                    <li key={warning}>{warning}</li>
-                  ))}
-                </ul>
+              {submissionInfo?.submissionId && (
+                <p className="mt-4 text-sm text-slate-600">
+                  Confirmation ID: <span className="font-mono text-slate-900">{submissionInfo.submissionId}</span>
+                </p>
+              )}
+              {submissionInfo?.warnings?.length ? (
+                <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-700 shadow-sm">
+                  <h3 className="text-base font-semibold">Submission notes</h3>
+                  <ul className="mt-3 space-y-2 list-disc pl-5">
+                    {submissionInfo.warnings.map((warning) => (
+                      <li key={warning}>{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+            <section className="rounded-3xl bg-slate-900 p-8 text-white shadow-xl shadow-slate-950/40">
+              <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
+                <div className="lg:w-1/2">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-sky-200 ring-1 ring-white/20">
+                    Coming soon
+                  </span>
+                  <h3 className="mt-6 text-2xl font-semibold text-white sm:text-3xl">Writing & Speaking Try Out is in development</h3>
+                  <p className="mt-4 text-sm text-slate-200">
+                    We are preparing interactive Writing and Speaking tasks so you can complete the full IELTS experience. Join the early interest list and we will contact you as soon as the new try out launches.
+                  </p>
+                  <p className="mt-4 text-xs text-slate-300">All follow-ups happen through email—no WhatsApp numbers required.</p>
+                </div>
+                <div className="lg:w-1/2">
+                  <div className="rounded-3xl bg-white p-6 text-slate-900 shadow-2xl shadow-slate-950/20 ring-1 ring-slate-200">
+                    <h4 className="text-lg font-semibold">Want to be first in line?</h4>
+                    <p className="mt-2 text-sm text-slate-600">
+                      Leave your name and email so our team can contact you once the Writing & Speaking try out is live.
+                    </p>
+                    <InterestForm
+                      className="mt-6"
+                      inputClassName="bg-slate-50"
+                      buttonClassName="bg-emerald-500 hover:bg-emerald-400 focus:ring-emerald-300"
+                    />
+                    <p className="mt-4 text-xs text-slate-500">
+                      We will only use your email to share launch updates for the Writing & Speaking try out.
+                    </p>
+                  </div>
+                </div>
               </div>
-            ) : null}
-          </div>
+            </section>
+          </>
         ) : (
           <>
             {visibleSections.map((section) => (

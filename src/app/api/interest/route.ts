@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { sendInterestNotification } from '@/lib/email';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
@@ -26,12 +27,33 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
   }
 
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    console.error('Supabase client is not configured for interest submissions.');
+    return NextResponse.json(
+      { error: 'We could not record your interest right now. Please try again later.' },
+      { status: 503 }
+    );
+  }
+
+  const { error: insertError } = await supabase
+    .from('writing_speaking_interest')
+    .upsert({ full_name: name, email }, { onConflict: 'email' });
+
+  if (insertError) {
+    console.error('Failed to store writing & speaking interest', insertError);
+    return NextResponse.json(
+      { error: 'We could not record your interest right now. Please try again later.' },
+      { status: 500 }
+    );
+  }
+
   try {
     await sendInterestNotification({ name, email });
   } catch (error) {
     console.error('Failed to send interest notification', error);
     return NextResponse.json(
-      { error: 'We could not record your interest right now. Please try again later.' },
+      { error: 'We recorded your interest, but could not send the notification email.' },
       { status: 500 }
     );
   }
