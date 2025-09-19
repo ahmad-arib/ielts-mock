@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 import { scoreQuestion, type ScoreDetail } from '@/lib/scoring';
@@ -100,6 +101,47 @@ export async function POST(
 
   const supabaseConfigured = hasSupabaseCredentials();
   const supabase = getSupabaseAdmin();
+  const sessionToken = cookies().get('session_token')?.value ?? null;
+
+  if (supabaseConfigured && !supabase) {
+    return NextResponse.json({ error: 'Supabase is configured but unavailable.' }, { status: 503 });
+  }
+
+  let sessionUserId: string | null = null;
+
+  if (supabaseConfigured) {
+    if (!sessionToken) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    }
+
+    try {
+      const { data: tokenRecord, error: tokenError } = await supabase!
+        .from('tokens')
+        .select('user_id, is_active, expires_at')
+        .eq('token', sessionToken)
+        .maybeSingle();
+
+      if (tokenError) {
+        return NextResponse.json({ error: 'Unable to validate session token.' }, { status: 500 });
+      }
+
+      if (!tokenRecord || !tokenRecord.is_active || !tokenRecord.user_id) {
+        return NextResponse.json({ error: 'Session expired. Please log in again.' }, { status: 401 });
+      }
+
+      if (typeof tokenRecord.expires_at === 'string') {
+        const expiresAtMs = Date.parse(tokenRecord.expires_at);
+        if (!Number.isNaN(expiresAtMs) && expiresAtMs < Date.now()) {
+          return NextResponse.json({ error: 'Session expired. Please log in again.' }, { status: 401 });
+        }
+      }
+
+      sessionUserId = tokenRecord.user_id;
+    } catch {
+      return NextResponse.json({ error: 'Unable to validate session token.' }, { status: 500 });
+    }
+  }
+
   let scoringRecords: ScoringRecord[] | null = null;
   let supabaseOperational = false;
 
@@ -136,29 +178,35 @@ export async function POST(
 
   if (supabaseOperational && supabase) {
     try {
-      const { data: submissionData, error: submissionError } = await supabase
-        .from('submissions')
-        .insert({ test_id: testId })
-        .select('submission_id')
-        .single();
-
-      if (submissionError) {
-        warnings.push('Unable to persist submission metadata to Supabase.');
+      if (!sessionUserId) {
+        warnings.push('Unable to identify the current user; Supabase persistence skipped.');
       } else {
-        submissionId = submissionData?.submission_id ?? null;
-        if (submissionId) {
-          const payloadRows = details.map((detail) => ({
-            submission_id: submissionId,
-            q_id: detail.qId,
-            answer_json: answers[detail.qId] ?? null,
-            score: detail.score,
-            max_score: detail.maxScore,
-          }));
+        const { data: submissionData, error: submissionError } = await supabase
+          .from('submissions')
+          .upsert({ test_id: testId, user_id: sessionUserId }, { onConflict: 'user_id,test_id' })
+          .select('submission_id')
+          .single();
 
-          if (payloadRows.length > 0) {
-            const { error: answersError } = await supabase.from('submission_answers').insert(payloadRows);
-            if (answersError) {
-              warnings.push('Unable to persist question-level scoring to Supabase.');
+        if (submissionError) {
+          warnings.push('Unable to persist submission metadata to Supabase.');
+        } else {
+          submissionId = submissionData?.submission_id ?? null;
+          if (submissionId) {
+            const payloadRows = details.map((detail) => ({
+              submission_id: submissionId,
+              q_id: detail.qId,
+              answer_json: answers[detail.qId] ?? null,
+              score: detail.score,
+              max_score: detail.maxScore,
+            }));
+
+            if (payloadRows.length > 0) {
+              const { error: answersError } = await supabase
+                .from('submission_answers')
+                .upsert(payloadRows, { onConflict: 'submission_id,q_id' });
+              if (answersError) {
+                warnings.push('Unable to persist question-level scoring to Supabase.');
+              }
             }
           }
         }
