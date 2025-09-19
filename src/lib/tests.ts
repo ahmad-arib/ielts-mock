@@ -211,7 +211,12 @@ export async function getTestDefinition(testId: string): Promise<TestDefinition 
     timing: manifest.timing,
     uiConstraints: manifest.ui_constraints
       ? {
-          audioControls: manifest.ui_constraints.audio_controls,
+          audioControls: manifest.ui_constraints.audio_controls
+            ? {
+                allowSeek: manifest.ui_constraints.audio_controls.allow_seek,
+                showRemaining: manifest.ui_constraints.audio_controls.show_remaining,
+              }
+            : undefined,
           allowFlagQuestion: manifest.ui_constraints.allow_flag_question,
           palette: manifest.ui_constraints.palette,
         }

@@ -58,7 +58,7 @@ export async function GET(
     const arrayBuffer = file.buffer.slice(
       file.byteOffset,
       file.byteOffset + file.byteLength
-    );
+    ) as ArrayBuffer;
 
     return new Response(arrayBuffer, {
       headers: {
