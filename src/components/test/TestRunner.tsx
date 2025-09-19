@@ -37,6 +37,38 @@ type QuestionCardProps = {
   onChange: (value: AnswerValue) => void;
 };
 
+function ExampleCard({ content }: { content: string }) {
+  const normalized = content.replace(/\r\n/g, '\n').trim();
+
+  if (!normalized) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Example</p>
+      </div>
+    );
+  }
+
+  const [firstLine, ...restLines] = normalized.split('\n');
+  const rawLabel = firstLine.trim();
+  const boldMatch = rawLabel.match(/^\*\*(.+)\*\*$/) ?? rawLabel.match(/^__(.+)__$/);
+  const italicMatch = rawLabel.match(/^\*(.+)\*$/) ?? rawLabel.match(/^_(.+)_$/);
+  const strippedLabel = boldMatch?.[1] ?? italicMatch?.[1] ?? rawLabel;
+  const labelCandidate = strippedLabel.replace(/:$/, '').trim();
+  const matchesExample = /^example$/i.test(labelCandidate);
+  const label = matchesExample && labelCandidate ? labelCandidate : 'Example';
+  const bodyCandidate = matchesExample ? restLines.join('\n').trim() : normalized;
+  const body = bodyCandidate.length > 0 ? bodyCandidate : matchesExample ? '' : normalized;
+
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">{label}</p>
+      {body ? (
+        <MarkdownText content={body} className="mt-2 space-y-1 text-sm text-amber-900" />
+      ) : null}
+    </div>
+  );
+}
+
 type AudioPlayerProps = {
   src?: string;
   allowSeek?: boolean;
@@ -370,11 +402,7 @@ function ListeningSectionView({ section, answers, onChange, audioControls }: Sec
       />
       <AssetDisplay assets={section.assets} sectionTitle={section.title} />
       <div className="space-y-4">
-        {section.exampleMd && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <MarkdownText content={section.exampleMd} className="space-y-1 text-sm font-medium text-slate-700" />
-          </div>
-        )}
+        {section.exampleMd ? <ExampleCard content={section.exampleMd} /> : null}
         {section.questions.map((question) => (
           <QuestionCard
             key={question.qId}
@@ -683,16 +711,6 @@ export function TestRunner({ test }: { test: TestDefinition }) {
                   Confirmation ID: <span className="font-mono text-slate-900">{submissionInfo.submissionId}</span>
                 </p>
               )}
-              {submissionInfo?.warnings?.length ? (
-                <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-700 shadow-sm">
-                  <h3 className="text-base font-semibold">Submission notes</h3>
-                  <ul className="mt-3 space-y-2 list-disc pl-5">
-                    {submissionInfo.warnings.map((warning) => (
-                      <li key={warning}>{warning}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
             </div>
             <section className="rounded-3xl bg-slate-900 p-8 text-white shadow-xl shadow-slate-950/40">
               <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
