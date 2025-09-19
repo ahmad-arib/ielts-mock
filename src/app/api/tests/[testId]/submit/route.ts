@@ -1,10 +1,7 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-import { scoreQuestion, type ScoreDetail } from '@/lib/scoring';
+import { scoreQuestion } from '@/lib/scoring';
 import { loadLocalScoringRecords, type ScoringRecord } from '@/lib/tests';
 import { getSupabaseAdmin, hasSupabaseCredentials } from '@/lib/supabaseAdmin';
 
@@ -14,67 +11,6 @@ function isSafeTestId(testId: string): boolean {
 
 interface SubmissionPayload {
   answers?: Record<string, unknown>;
-}
-
-function sanitizeForFilename(value: string): string {
-  return value.replace(/[^A-Za-z0-9_-]/g, '_');
-}
-
-function stringifyForCsv(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  return JSON.stringify(value);
-}
-
-function toCsvValue(value: unknown): string {
-  const raw = stringifyForCsv(value);
-  const escaped = raw.replace(/"/g, '""');
-  return /[",\n\r]/.test(raw) ? `"${escaped}"` : escaped;
-}
-
-function createCsvLine(values: unknown[]): string {
-  return values.map(toCsvValue).join(',');
-}
-
-async function persistSubmissionCsv(
-  testId: string,
-  submissionId: string | null,
-  details: ScoreDetail[],
-  answers: Record<string, unknown>
-): Promise<string> {
-  const resultsDir = path.join(process.cwd(), 'tests', testId, 'results');
-  await mkdir(resultsDir, { recursive: true });
-
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const submissionSlug = submissionId ? `submission-${sanitizeForFilename(submissionId)}` : 'submission-local';
-  const fileName = `${timestamp}--${submissionSlug}.csv`;
-  const filePath = path.join(resultsDir, fileName);
-
-  const header = createCsvLine([
-    'submission_id',
-    'question_id',
-    'user_answer',
-    'is_correct',
-    'score',
-    'max_score',
-    'correct_answer',
-  ]);
-
-  const rows = details.map((detail) =>
-    createCsvLine([
-      submissionId ?? '',
-      detail.qId,
-      answers[detail.qId] ?? '',
-      detail.isCorrect ? 'true' : 'false',
-      detail.score,
-      detail.maxScore,
-      detail.correctAnswer ?? '',
-    ])
-  );
-
-  await writeFile(filePath, [header, ...rows].join('\n'), 'utf-8');
-  return filePath;
 }
 
 export async function POST(
@@ -248,12 +184,6 @@ export async function POST(
       },
     ])
   );
-
-  try {
-    await persistSubmissionCsv(testId, submissionId, details, answers);
-  } catch {
-    warnings.push('Unable to save a local CSV copy of the submission results.');
-  }
 
   return NextResponse.json({
     testId,

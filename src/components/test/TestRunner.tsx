@@ -370,6 +370,11 @@ function ListeningSectionView({ section, answers, onChange, audioControls }: Sec
       />
       <AssetDisplay assets={section.assets} sectionTitle={section.title} />
       <div className="space-y-4">
+        {section.exampleMd && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <MarkdownText content={section.exampleMd} className="space-y-1 text-sm font-medium text-slate-700" />
+          </div>
+        )}
         {section.questions.map((question) => (
           <QuestionCard
             key={question.qId}
