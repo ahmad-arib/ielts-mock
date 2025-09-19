@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
+import { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 
@@ -36,10 +37,10 @@ function getMimeType(ext: string): string {
 }
 
 export async function GET(
-  _request: Request,
-  { params }: { params: { testId: string; assetPath: string[] } }
+  request: NextRequest,
+  context: { params: Promise<{ testId: string; assetPath: string[] }> }
 ): Promise<Response> {
-  const { testId, assetPath } = params;
+  const { testId, assetPath } = await context.params;
   if (!isSafeTestId(testId) || !Array.isArray(assetPath) || assetPath.length === 0) {
     return new Response('Not found', { status: 404 });
   }
