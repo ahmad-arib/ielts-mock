@@ -185,35 +185,50 @@ export async function POST(
       } else {
         const { data: submissionData, error: submissionError } = await supabase
           .from('submissions')
-          .upsert({ test_id: testId, user_id: sessionUserId }, { onConflict: 'user_id,test_id' })
+          .upsert({ user_id: sessionUserId, test_id: testId }, { onConflict: 'user_id,test_id' })
           .select('submission_id')
           .single();
 
         if (submissionError) {
+          console.error(
+            'Supabase submissions upsert failed',
+            submissionError.code,
+            submissionError.message,
+            submissionError.details
+          );
           warnings.push('Unable to persist submission metadata to Supabase.');
         } else {
           submissionId = submissionData?.submission_id ?? null;
-          if (submissionId) {
-            const payloadRows = details.map((detail) => ({
+
+          if (!submissionId) {
+            warnings.push('Unable to obtain a submission id from Supabase.');
+          } else {
+            const answerRows = Object.entries(answers).map(([qId, answerValue]) => ({
               submission_id: submissionId,
-              q_id: detail.qId,
-              answer_json: answers[detail.qId] ?? null,
-              score: detail.score,
-              max_score: detail.maxScore,
+              q_id: qId,
+              answer_json: answerValue ?? null,
             }));
 
-            if (payloadRows.length > 0) {
+            if (answerRows.length > 0) {
               const { error: answersError } = await supabase
                 .from('submission_answers')
-                .upsert(payloadRows, { onConflict: 'submission_id,q_id' });
+                .upsert(answerRows, { onConflict: 'submission_id,q_id' });
+
               if (answersError) {
-                warnings.push('Unable to persist question-level scoring to Supabase.');
+                console.error(
+                  'Supabase submission_answers upsert failed',
+                  answersError.code,
+                  answersError.message,
+                  answersError.details
+                );
+                warnings.push('Unable to persist question-level answers to Supabase.');
               }
             }
           }
         }
       }
-    } catch {
+    } catch (error) {
+      console.error('Unexpected Supabase error while saving submission.', error);
       warnings.push('Unexpected Supabase error while saving submission.');
     }
   } else if (supabaseConfigured) {
