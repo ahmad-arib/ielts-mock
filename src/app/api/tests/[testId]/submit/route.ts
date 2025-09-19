@@ -99,9 +99,11 @@ export async function POST(
   }
   const answers = rawAnswers as Record<string, unknown>;
 
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get('session_token')?.value ?? null;
+
   const supabaseConfigured = hasSupabaseCredentials();
   const supabase = getSupabaseAdmin();
-  const sessionToken = cookies().get('session_token')?.value ?? null;
 
   if (supabaseConfigured && !supabase) {
     return NextResponse.json({ error: 'Supabase is configured but unavailable.' }, { status: 503 });
