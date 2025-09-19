@@ -64,7 +64,7 @@ export default function Home() {
         <div className="relative mx-auto flex max-w-6xl flex-col gap-16 px-6 lg:flex-row lg:items-center lg:gap-20">
           <div className="max-w-xl lg:flex-1">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-sky-200 ring-1 ring-white/20">
-              IELTS Try Out MVP
+              IELTS Try Out
             </span>
             <h1 className="mt-6 text-4xl font-bold leading-tight text-white sm:text-5xl">
               Experience the IELTS in real time for under 5% of the official fee
