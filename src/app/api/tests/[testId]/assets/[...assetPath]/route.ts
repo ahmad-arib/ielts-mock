@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 
@@ -37,7 +37,7 @@ function getMimeType(ext: string): string {
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ testId: string; assetPath: string[] }> }
 ): Promise<Response> {
   const { testId, assetPath } = await context.params;
@@ -55,12 +55,13 @@ export async function GET(
   try {
     const file = await fs.readFile(resolvedPath);
     const contentType = getMimeType(path.extname(resolvedPath).toLowerCase());
-    const arrayBuffer = file.buffer.slice(
+    const body = new Uint8Array(
+      file.buffer,
       file.byteOffset,
-      file.byteOffset + file.byteLength
+      file.byteLength
     );
 
-    return new Response(arrayBuffer, {
+    return new Response(body, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000, immutable',
