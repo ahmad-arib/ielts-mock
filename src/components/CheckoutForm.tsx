@@ -13,7 +13,7 @@ type CheckoutFormProps = {
 export default function CheckoutForm({
   orientation = 'vertical',
   className = '',
-  buttonLabel = 'Pay & Get Token',
+  buttonLabel = 'Pay & Get Try Out Token',
   buttonClassName = '',
   inputClassName = '',
 }: CheckoutFormProps) {
@@ -25,24 +25,7 @@ export default function CheckoutForm({
     const formData = new FormData(form);
     const name = formData.get('name');
     const email = formData.get('email');
-    const phone = formData.get('phone');
-
     if (typeof name !== 'string' || typeof email !== 'string') {
-      return;
-    }
-
-    const sanitizedPhone =
-      typeof phone === 'string'
-        ? phone
-            .replace(/[^0-9+]/g, '')
-            .replace(/(?!^)[+]/g, '')
-            .trim()
-        : '';
-
-    const digitsOnly = sanitizedPhone.replace(/[^0-9]/g, '');
-
-    if (!digitsOnly || digitsOnly.length < 8) {
-      alert('Please enter a valid phone number so we can share the payment status.');
       return;
     }
 
@@ -50,7 +33,7 @@ export default function CheckoutForm({
       setLoading(true);
       const response = await fetch('/api/checkout', {
         method: 'POST',
-        body: JSON.stringify({ name, email, phone: sanitizedPhone }),
+        body: JSON.stringify({ name, email }),
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -112,15 +95,6 @@ export default function CheckoutForm({
         type="email"
         placeholder="Email for token delivery"
         autoComplete="email"
-        className={nameInputClasses}
-        required
-      />
-      <input
-        name="phone"
-        type="tel"
-        placeholder="WhatsApp number for payment updates"
-        autoComplete="tel"
-        inputMode="tel"
         className={nameInputClasses}
         required
       />

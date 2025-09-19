@@ -30,12 +30,8 @@ type TripayCreateResponse = {
   };
 };
 
-function sanitizePhoneNumber(phone: string) {
-  return phone.replace(/[^0-9]/g, '');
-}
-
 export async function POST(req: Request) {
-  let payload: { name?: string; email?: string; phone?: string };
+  let payload: { name?: string; email?: string };
 
   try {
     payload = await req.json();
@@ -46,15 +42,9 @@ export async function POST(req: Request) {
 
   const name = typeof payload.name === 'string' ? payload.name.trim() : '';
   const email = typeof payload.email === 'string' ? payload.email.trim() : '';
-  const phone = typeof payload.phone === 'string' ? payload.phone.trim() : '';
 
   if (!name || !email) {
     return NextResponse.json({ error: 'Name and email are required.' }, { status: 400 });
-  }
-
-  const sanitizedPhone = sanitizePhoneNumber(phone);
-  if (!sanitizedPhone || sanitizedPhone.length < 8) {
-    return NextResponse.json({ error: 'Please provide a valid phone number.' }, { status: 400 });
   }
 
   const configuredAmount = Number(process.env.TRIPAY_AMOUNT);
@@ -89,8 +79,8 @@ export async function POST(req: Request) {
 
   const orderItems: TripayOrderItem[] = [
     {
-      sku: 'IELTS-MOCK-ONE',
-      name: 'IELTS Mock Test Token (14 days)',
+      sku: 'IELTS-TRY-OUT-ONE',
+      name: 'IELTS Try Out Token (14 days)',
       price: amount,
       quantity: 1,
       product_url: resolveTripayProductUrl(),
@@ -103,7 +93,6 @@ export async function POST(req: Request) {
     amount,
     customer_name: name,
     customer_email: email,
-    customer_phone: sanitizedPhone,
     order_items: orderItems,
     callback_url: resolveTripayCallbackUrl(),
     return_url: resolveTripayReturnUrl(),
