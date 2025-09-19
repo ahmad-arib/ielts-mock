@@ -17,6 +17,7 @@
       "title": "Listening Section 1 (Q1–10)",
       "audio_src": "assets/listening/track_1.mp3",
       "instructions_md": "Complete the notes. Write **ONE WORD AND/OR A NUMBER** for each answer.",
+      "example_md": "**Example**\nThe Main Hall - seats ..200...",
       "questions": [
         { "q_id": "L1-Q1",  "q_type": "short_text", "expected": "one_word_or_number", "prompt_md": "Room and cost – the **_____ Room** – seats 100" },
         { "q_id": "L1-Q2",  "q_type": "short_text", "expected": "currency_number",     "prompt_md": "Cost of Main Hall for Saturday evening: £ **_____**" },

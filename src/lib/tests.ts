@@ -24,6 +24,7 @@ export interface ListeningSectionDefinition {
   type: 'listening';
   title: string;
   instructionsMd?: string;
+  exampleMd?: string;
   audioSrc?: string;
   questions: NormalizedQuestion[];
   assets?: Record<string, string>;
@@ -34,6 +35,7 @@ export interface ReadingSectionDefinition {
   type: 'reading';
   title: string;
   instructionsMd?: string;
+  exampleMd?: string;
   passageMd?: string;
   layout?: { columns?: number; readingOrder?: string };
   questions: NormalizedQuestion[];
@@ -80,6 +82,7 @@ interface RawSection {
   type: 'listening' | 'reading';
   title: string;
   instructions_md?: string;
+  example_md?: string;
   audio_src?: string;
   passage_src_md?: string;
   layout?: { columns?: number; reading_order?: string };
@@ -178,6 +181,7 @@ export async function getTestDefinition(testId: string): Promise<TestDefinition 
         sectionId: section.section_id,
         title: section.title,
         instructionsMd: section.instructions_md,
+        exampleMd: section.example_md,
         questions: section.questions.map(mapQuestion),
         assets: mapAssets(manifest.test_id, section.assets),
       };
