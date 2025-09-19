@@ -8,12 +8,12 @@ export default function BuyPage() {
           Checkout
         </span>
         <h1 className="mt-6 text-3xl font-bold text-slate-900 sm:text-4xl">
-          Secure your IELTS mock test seat
+          Secure your IELTS try out access
         </h1>
         <p className="mt-4 text-base text-slate-600">
-          Complete your payment through Tripay. Once the transaction is confirmed as <strong>PAID</strong>,
-          we email a unique login token that stays active for 14 days so you can take the full mock test when
-          it fits your schedule.
+          Complete your payment through Tripay. Once the transaction is confirmed as <strong>PAID</strong>, we email a
+          unique login token that stays active for 14 days so you can experience the real-time Listening and Reading try out
+          at less than five percent of the official exam cost.
         </p>
         <CheckoutForm className="mt-8" buttonLabel="Checkout securely" />
         <div className="mt-8 rounded-2xl bg-slate-50 p-5 text-sm text-slate-600">
@@ -25,11 +25,11 @@ export default function BuyPage() {
             </li>
             <li className="flex gap-2">
               <span className="mt-0.5 text-blue-500">•</span>
-              <span>Use the token within 14 days to access the IELTS mock test dashboard.</span>
+              <span>Use the token within 14 days to access the IELTS try out dashboard for Listening & Reading.</span>
             </li>
             <li className="flex gap-2">
               <span className="mt-0.5 text-blue-500">•</span>
-              <span>Need help? Simply reply to the email—our team is ready to assist.</span>
+              <span>Scoring will be delivered by email, and Writing & Speaking try outs are coming soon.</span>
             </li>
           </ul>
         </div>

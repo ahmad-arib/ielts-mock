@@ -598,8 +598,11 @@ export function TestRunner({ test }: { test: TestDefinition }) {
     <div className="min-h-screen bg-slate-100 py-12">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6">
         <header className="rounded-3xl bg-gradient-to-br from-sky-900 via-indigo-900 to-slate-900 p-10 text-white shadow-xl">
-          <p className="text-xs uppercase tracking-[0.3em] text-sky-200">IELTS Mock Test</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-sky-200">IELTS Try Out</p>
           <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{test.title}</h1>
+          <p className="mt-3 text-sm text-sky-100/90">
+            This try out currently includes Listening and Reading sections. Writing & Speaking modules are being prepared.
+          </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <div
               className={`rounded-2xl border p-5 ${
@@ -656,7 +659,7 @@ export function TestRunner({ test }: { test: TestDefinition }) {
           )}
           {showThankYou && (
             <div className="mt-6 rounded-2xl border border-white/20 bg-white/10 p-6 text-sm text-sky-50">
-              Thank you for completing the test. We will send your results to your email shortly.
+              Thank you for completing the try out. Scoring will be delivered by email shortly.
             </div>
           )}
         </header>

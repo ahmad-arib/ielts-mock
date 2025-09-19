@@ -18,13 +18,20 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="p-10 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Login with Token</h1>
+    <main className="mx-auto max-w-md p-10">
+      <h1 className="mb-2 text-2xl font-bold text-slate-900">Login to the IELTS Try Out</h1>
+      <p className="mb-6 text-sm text-slate-600">
+        Enter your token to access the Listening & Reading try out. Writing & Speaking modules are being prepared and will be
+        announced by email soon.
+      </p>
       <form onSubmit={handleLogin} className="flex flex-col gap-4">
-        <input name="token" placeholder="Enter token" className="border p-2 rounded" required />
-        <button disabled={loading} className="bg-green-600 text-white px-4 py-2 rounded">{loading ? 'Loading...' : 'Login'}</button>
+        <input name="token" placeholder="Enter token" className="rounded border border-slate-300 p-3 text-sm" required />
+        <button disabled={loading} className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-70">
+          {loading ? 'Loading...' : 'Login'}
+        </button>
       </form>
-      {error && <p className="text-red-600 mt-2">{error}</p>}
+      <p className="mt-3 text-xs text-slate-500">Scoring will be delivered by email.</p>
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
     </main>
   );
 }

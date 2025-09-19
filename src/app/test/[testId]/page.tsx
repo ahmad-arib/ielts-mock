@@ -13,10 +13,10 @@ export async function generateMetadata({ params }: { params: Promise<{ testId: s
   const { testId } = await params;
   const test = await getTestDefinition(testId);
   if (!test) {
-    return { title: 'IELTS Mock Test' };
+    return { title: 'IELTS Try Out' };
   }
   return {
-    title: `${test.title} – IELTS Mock Test`,
+    title: `${test.title} – IELTS Try Out`,
   };
 }
 
